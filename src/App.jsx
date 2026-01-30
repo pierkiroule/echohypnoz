@@ -45,6 +45,10 @@ export default function App() {
     })
   }
 
+  function resetSelection() {
+    setSelected([])
+  }
+
   return (
     <div className="page">
       <header className="top">
@@ -56,6 +60,19 @@ export default function App() {
           <br />
           choisis trois symboles qui résonnent pour toi.
         </p>
+        <div className="selectionBar" role="status" aria-live="polite">
+          <span className="selectionCount">
+            {selected.length} / 3 choisis
+          </span>
+          <button
+            className="resetButton"
+            type="button"
+            onClick={resetSelection}
+            disabled={selected.length === 0}
+          >
+            Réinitialiser
+          </button>
+        </div>
       </header>
 
       <main className="stage">
@@ -73,6 +90,14 @@ export default function App() {
               className={`nodeOverlay ${selected.includes(n.id) ? "selected" : ""}`}
               style={{ "--x": n.x, "--y": n.y }}
               onClick={() => toggle(n.id)}
+              onKeyDown={event => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault()
+                  toggle(n.id)
+                }
+              }}
+              role="button"
+              tabIndex={0}
               title={A.name}
             >
               <A.icon
