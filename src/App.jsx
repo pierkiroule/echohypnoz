@@ -1,10 +1,41 @@
-import { useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import EmojiGraph from "./EmojiGraph.jsx"
 import { ARCHETYPES } from "./archetypes.js"
+import { generateMantra } from "./haiku.js"
 
 export default function App() {
   const [nodes, setNodes] = useState([])
   const [selected, setSelected] = useState([])
+  const [transitioning, setTransitioning] = useState(false)
+  const [sceneReady, setSceneReady] = useState(false)
+  const timersRef = useRef([])
+
+  const mantra = useMemo(() => {
+    if (selected.length !== 3) return null
+    return generateMantra(selected)
+  }, [selected])
+
+  useEffect(() => {
+    timersRef.current.forEach(timer => clearTimeout(timer))
+    timersRef.current = []
+    setTransitioning(false)
+    setSceneReady(false)
+
+    if (selected.length === 3) {
+      const transitionTimer = setTimeout(() => {
+        setTransitioning(true)
+      }, 5200)
+      const sceneTimer = setTimeout(() => {
+        setSceneReady(true)
+      }, 7200)
+
+      timersRef.current = [transitionTimer, sceneTimer]
+    }
+
+    return () => {
+      timersRef.current.forEach(timer => clearTimeout(timer))
+    }
+  }, [selected])
 
   function toggle(id) {
     setSelected(prev => {
@@ -29,7 +60,7 @@ export default function App() {
 
       <main className="stage">
         {/* Champ vivant (D3 → positions) */}
-        <EmojiGraph onPositions={setNodes} />
+        <EmojiGraph onPositions={setNodes} selectedIds={selected} />
 
         {/* Icônes dans le champ */}
         {nodes.map(n => {
@@ -52,6 +83,19 @@ export default function App() {
             </div>
           )
         })}
+
+        {selected.length === 3 && (
+          <div
+            className={`immersionLayer${transitioning ? " active" : ""}${
+              sceneReady ? " visible" : ""
+            }`}
+          >
+            <div className="immersionContent">
+              <span>La scène s’ouvre doucement</span>
+              <small>Une immersion se prépare.</small>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* 🔑 MISE EN SENS */}
@@ -68,9 +112,26 @@ export default function App() {
           })}
 
           {selected.length === 3 && (
-            <p className="meaningHint">
-              Ces trois forces composent ton champ de l’instant.
-            </p>
+            <>
+              {mantra && (
+                <div className="mantraBlock">
+                  <p className="mantraTitle">Mantra du moment</p>
+                  <p className="mantraText">
+                    {mantra.split("\n").map((line, index) => (
+                      <span key={`${line}-${index}`}>{line}</span>
+                    ))}
+                  </p>
+                </div>
+              )}
+              <p className="meaningHint">
+                Ces trois forces composent ton champ de l’instant.
+              </p>
+              {transitioning && (
+                <p className="transitionHint">
+                  Laisse le mantra s’infuser, la scène se déplie.
+                </p>
+              )}
+            </>
           )}
         </section>
       )}
